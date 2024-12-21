@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionare Lucrări 2025</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .work-form {
+            margin-bottom: 20px;
+        }
+        .work-form input, .work-form select {
+            width: calc(33% - 10px);
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .work-form button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .work-form button:hover {
+            background-color: #0056b3;
+        }
+        .work-list {
+            list-style: none;
+            padding: 0;
+        }
+        .work-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .work-item span {
+            flex: 1;
+        }
+        .work-item button {
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .work-item button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestionare Lucrări 2025</h1>
+        <div class="work-form">
+            <input type="text" id="location" placeholder="Locație">
+            <input type="text" id="description" placeholder="Descriere">
+            <input type="date" id="date" placeholder="Data">
+            <select id="status">
+                <option value="În așteptare">În așteptare</option>
+                <option value="În curs">În curs</option>
+                <option value="Finalizată">Finalizată</option>
+            </select>
+            <button onclick="addWork()">Adaugă</button>
+        </div>
+        <input type="text" id="search" placeholder="Caută lucrări..." oninput="filterWorks()">
+        <ul id="workList" class="work-list">
+            <!-- Lucrările vor apărea aici -->
+        </ul>
+    </div>
+
+    <script>
+        const workList = document.getElementById('workList');
+        const searchInput = document.getElementById('search');
+
+        // Încarcă lucrările din Local Storage
+        function loadWorks() {
+            const savedWorks = JSON.parse(localStorage.getItem('works')) || [];
+            savedWorks.forEach(work => {
+                addWorkToDOM(work);
+            });
+        }
+
+        // Adaugă o lucrare în DOM
+        function addWorkToDOM(work) {
+            const workItem = document.createElement('li');
+            workItem.className = 'work-item';
+
+            const workDetails = document.createElement('span');
+            workDetails.textContent = `${work.date} - ${work.location} - ${work.description} (${work.status})`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Șterge';
+            deleteButton.onclick = () => deleteWork(work);
+
+            workItem.appendChild(workDetails);
+            workItem.appendChild(deleteButton);
+
+            workList.appendChild(workItem);
+        }
+
+        // Adaugă o lucrare nouă
+        function addWork() {
+            const location = document.getElementById('location').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            const status = document.getElementById('status').value;
+
+            if (location.trim() === '' || description.trim() === '' || date.trim() === '') {
+                alert('Te rog să completezi toate câmpurile!');
+                return;
+            }
+
+            const work = { location, description, date, status };
+            addWorkToDOM(work);
+
+            // Salvează lucrarea în Local Storage
+            const savedWorks = JSON.parse(localStorage.getItem('works')) || [];
+            savedWorks.push(work);
+            localStorage.setItem('works', JSON.stringify(savedWorks));
+
+            // Golește câmpurile de input
+            document.getElementById('location').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('status').value = 'În așteptare';
+        }
+
+        // Șterge o lucrare
+        function deleteWork(workToDelete) {
+            const savedWorks = JSON.parse(localStorage.getItem('works')) || [];
+            const updatedWorks = savedWorks.filter(work => {
+                return !(work.location === workToDelete.location &&
+                         work.description === workToDelete.description &&
+                         work.date === workToDelete.date &&
+                         work.status === workToDelete.status);
+            });
+
+            localStorage.setItem('works', JSON.stringify(updatedWorks));
+            renderWorks();
+        }
+
+        // Filtrează lucrările după text
+        function filterWorks() {
+            const searchText = searchInput.value.toLowerCase();
+            const savedWorks = JSON.parse(localStorage.getItem('works')) || [];
+            const filteredWorks = savedWorks.filter(work => {
+                return work.location.toLowerCase().includes(searchText) ||
+                       work.description.toLowerCase().includes(searchText) ||
+                       work.status.toLowerCase().includes(searchText);
+            });
+
+            renderWorks(filteredWorks);
+        }
+
+        // Renderizează lista de lucrări
+        function renderWorks(works = null) {
+            workList.innerHTML = '';
+            const savedWorks = works || JSON.parse(localStorage.getItem('works')) || [];
+            savedWorks.forEach(work => {
+                addWorkToDOM(work);
+            });
+        }
+
+        // Încarcă lucrările existente la pornirea paginii
+        loadWorks();
+    </script>
+</body>
+</html>
