@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionare Lucrări 2025</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .work-form {
+            margin-bottom: 20px;
+        }
+        .work-form input, .work-form select {
+            width: calc(33% - 10px);
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .work-form button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .work-form button:hover {
+            background-color: #0056b3;
+        }
+        .work-list {
+            list-style: none;
+            padding: 0;
+        }
+        .work-item {
+            padding: 10px;
+            margin: 10px 0;
+            background: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .work-item span {
+            flex: 1;
+        }
+        .work-item button {
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .work-item button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestionare Lucrări 2025</h1>
+        <div class="work-form">
+            <input type="text" id="location" placeholder="Locație">
+            <input type="text" id="description" placeholder="Descriere">
+            <input type="date" id="date" placeholder="Data">
+            <select id="status">
+                <option value="În așteptare">În așteptare</option>
+                <option value="În curs">În curs</option>
+                <option value="Finalizată">Finalizată</option>
+            </select>
+            <button onclick="addWork()">Adaugă</button>
+        </div>
+        <input type="text" id="search" placeholder="Caută lucrări..." oninput="filterWorks()">
+        <ul id="workList" class="work-list">
+            <!-- Lucrările vor apărea aici -->
+        </ul>
+    </div>
+
+    <script>
+        // Configurația Firebase
+        const firebaseConfig = {
+            // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCE8IDj7HqC7a8LSgX_JiWQZdLhQ5HQ3SM",
+  authDomain: "gestionare-lucrari-2025.firebaseapp.com",
+  projectId: "gestionare-lucrari-2025",
+  storageBucket: "gestionare-lucrari-2025.firebasestorage.app",
+  messagingSenderId: "266726317430",
+  appId: "1:266726317430:web:a7baa7411fb89f8d33ee57",
+  measurementId: "G-6NBQGLTGSF"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+        };
+
+        // Inițializează Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(app);
+
+        const workList = document.getElementById('workList');
+        const searchInput = document.getElementById('search');
+
+        // Încarcă lucrările din Firestore
+        async function loadWorks() {
+            const snapshot = await db.collection('works').get();
+            snapshot.forEach(doc => {
+                const work = doc.data();
+                addWorkToDOM(work, doc.id);
+            });
+        }
+
+        // Adaugă o lucrare în DOM
+        function addWorkToDOM(work, id) {
+            const workItem = document.createElement('li');
+            workItem.className = 'work-item';
+
+            const workDetails = document.createElement('span');
+            workDetails.textContent = `${work.date} - ${work.location} - ${work.description} (${work.status})`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Șterge';
+            deleteButton.onclick = () => deleteWork(id);
+
+            workItem.appendChild(workDetails);
+            workItem.appendChild(deleteButton);
+
+            workList.appendChild(workItem);
+        }
+
+        // Adaugă o lucrare nouă în Firestore
+        async function addWork() {
+            const location = document.getElementById('location').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            const status = document.getElementById('status').value;
+
+            if (location.trim() === '' || description.trim() === '' || date.trim() === '') {
+                alert('Te rog să completezi toate câmpurile!');
+                return;
+            }
+
+            const work = { location, description, date, status };
+            const docRef = await db.collection('works').add(work);
+            addWorkToDOM(work, docRef.id);
+
+            // Golește câmpurile de input
+            document.getElementById('location').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('status').value = 'În așteptare';
+        }
+
+        // Șterge o lucrare din Firestore
+        async function deleteWork(id) {
+            await db.collection('works').doc(id).delete();
+            renderWorks();
+        }
+
+        // Filtrează lucrările după text
+        async function filterWorks() {
+            const searchText = searchInput.value.toLowerCase();
+            const snapshot = await db.collection('works').get();
+            const filteredWorks = snapshot.docs.filter(doc => {
+                const work = doc.data();
+                return work.location.toLowerCase().includes(searchText) ||
+                       work.description.toLowerCase().includes(searchText) ||
+                       work.status.toLowerCase().includes(searchText);
+            });
+
+            renderWorks(filteredWorks.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+
+        // Renderizează lista de lucrări
+        async function renderWorks(works = null) {
+            workList.innerHTML = '';
+            if (!works) {
+                const snapshot = await db.collection('works').get();
+                works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }
+            works.forEach(work => {
+                addWorkToDOM(work, work.id);
+            });
+        }
+
+        // Încarcă lucrările existente la pornirea paginii
+        loadWorks();
+    </script>
+</body>
+</html>
